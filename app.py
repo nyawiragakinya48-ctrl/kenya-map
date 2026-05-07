@@ -5,102 +5,150 @@ from streamlit_folium import st_folium
 import pandas as pd
 
 # --- APP CONFIG ---
-st.set_page_config(layout="wide", page_title="Nairobi GT Market Intelligence")
-st.title("📍 Nairobi GT Region: 943 Customer Distribution & Population Intelligence")
+st.set_page_config(layout="wide", page_title="Nairobi GT 942 Map")
+st.title("📍 Nairobi GT Region: 942 Customer Strategy Map")
 
-# --- DATA AGGREGATION (Mapping 943 Customers to Areas) ---
-# Population Density: People per sq/km (Approx based on 2019 Census)
-data = {
+# --- DATA LOADING & PROCESSING ---
+# Updated with exact data from the provided image tally
+area_data = {
     'Area': [
-        'Eastleigh', 'Nairobi CBD (OTC/Nyamakima)', 'Kayole / Njiru', 'Thika Town', 
-        'Ruiru / Juja Corridor', 'Githurai 45 / 44', 'Pipeline / Embakasi', 
-        'Umoja / Donholm', 'Kawangware / Dagoretti', 'Kasarani / Mwiki', 
-        'Kitui Central', 'Machakos Town', 'Mlolongo / Syokimau', 'Kitengela / Athi River',
-        'Kahawa West / Roysambu', 'Rongai / Kiserian', 'Ngong / Matasia', 'Westlands / Parklands',
-        'Garissa Hub', 'Wote / Makueni', 'Kibwezi / Makindu', 'Matuu / Tala',
-        'Isinya / Kajiado', 'Limuru / Wangige', 'Buruburu / Jogoo Rd', 'Kibera / Woodley',
-        'Nairobi West / South C', 'Zimmermann / Marurui', 'Emali / Sultan Hamud', 'Oloitoktok'
+        'EASTLEIGH', 'NAIROBI CBD', 'THIKA', 'KAMITI RD', 'KITUI', 
+        'MOMBASA RD', 'KAYOLE', 'RUIRU-JUJA', 'NAIROBI WEST', 'KADAMALA', 
+        'UMOJA', 'RONGAI', 'UTAWALA', 'KASA-MWIKI', 'WANGIGE-LIMURU', 
+        'GARISSA', 'MACHAKOS', 'PIPELINE', 'KILIMANI', 'KAWANGWARE', 
+        'GITHURAI 45', 'MWINGI', 'NGONG', 'WOTE', 'KIBWEZI', 
+        'KIAMBU', 'OLOITOKTOK', 'KANGUNDO RD', 'PARKLANDS', 'KIKUYU', 
+        'MATUU', 'EMALI', 'NAMANGA', 'WAIYAKI WAY', 'KAJIADO', 
+        'ISINYA', 'MAKINDU', 'KIBRA', 'JOGOO RD', 'SULTAN HAMUD', 
+        'JOGOO ROAD', 'NUNGUNI', 'BISIL', 'TALA', 'KAREN', 
+        'SALAMA', 'KANGUNDO', 'KOLA'
     ],
-    'Customer_Count': [
-        182, 124, 86, 68, 54, 42, 40, 38, 35, 32, 28, 25, 22, 21, 20, 19, 16, 15, 18, 12, 11, 10, 8, 7, 7, 6, 5, 5, 4, 3
+    'Count': [
+        81, 71, 45, 43, 43, 
+        40, 37, 36, 34, 32, 
+        31, 29, 27, 26, 26, 
+        25, 23, 21, 20, 20, 
+        17, 16, 15, 14, 14, 
+        13, 12, 12, 12, 10, 
+        10, 10, 8, 8, 7, 
+        7, 7, 6, 6, 5, 
+        5, 4, 4, 3, 3, 
+        2, 1, 1
     ],
-    'Pop_Density_sqkm': [
-        25000, 12000, 31000, 9500, 7800, 22000, 28000, 26000, 29000, 18000, 
-        450, 600, 5200, 4800, 15000, 6200, 4500, 8500, 120, 85, 60, 280, 
-        110, 3200, 24000, 35000, 11000, 19000, 90, 45
+    # Approximate Lat/Lon coordinates for mapping
+    'Lat': [
+        -1.275, -1.285, -1.039, -1.185, -1.365, 
+        -1.346, -1.292, -1.144, -1.315, -1.250, 
+        -1.288, -1.393, -1.285, -1.238, -1.221, 
+        -0.456, -1.517, -1.312, -1.289, -1.274, 
+        -1.150, -0.933, -1.359, -1.780, -2.414, 
+        -1.171, -2.980, -1.276, -1.263, -1.246, 
+        -1.144, -2.080, -2.534, -1.265, -1.850, 
+        -1.670, -2.280, -1.312, -1.285, -2.020, 
+        -1.286, -1.748, -1.890, -1.282, -1.336, 
+        -2.020, -1.291, -1.580
     ],
-    'Wholesalers': ['Dominant', 'High', 'Low', 'Medium', 'Medium', 'Medium', 'Low', 'Low', 'Low', 'Low', 'High', 'High', 'Medium', 'Medium', 'Low', 'Low', 'Low', 'Low', 'High', 'Medium', 'Medium', 'Medium', 'Low', 'Low', 'Medium', 'Low', 'Low', 'Low', 'High', 'Low'],
-    'Likely_Dukas': ['5,500+', '1,200+', '8,500+', '3,200+', '4,100+', '6,000+', '7,200+', '5,400+', '9,000+', '4,800+', '2,200+', '2,800+', '1,800+', '2,500+', '4,000+', '3,800+', '2,200+', '800+', '1,400+', '950+', '800+', '1,100+', '900+', '2,100+', '3,200+', '10,000+', '1,500+', '4,200+', '750+', '500+'],
-    'Lat': [-1.276, -1.285, -1.292, -1.039, -1.144, -1.150, -1.315, -1.288, -1.274, -1.218, -1.365, -1.517, -1.391, -1.481, -1.185, -1.393, -1.359, -1.263, -0.456, -1.780, -2.414, -1.144, -1.670, -1.107, -1.285, -1.312, -1.315, -1.211, -2.080, -2.980],
-    'Lon': [36.850, 36.823, 36.897, 37.090, 36.959, 36.930, 36.915, 36.892, 36.751, 36.895, 37.994, 37.262, 36.924, 36.945, 36.896, 36.741, 36.657, 36.804, 39.658, 37.625, 37.950, 37.535, 36.850, 36.640, 36.878, 36.790, 36.828, 36.883, 37.460, 37.500]
+    'Lon': [
+        36.848, 36.823, 37.090, 36.896, 37.994, 
+        36.902, 36.897, 36.959, 36.828, 36.880, 
+        36.892, 36.741, 36.995, 36.891, 36.702, 
+        39.658, 37.262, 36.897, 36.791, 36.751, 
+        36.930, 38.011, 36.657, 37.625, 37.950, 
+        36.835, 37.500, 36.950, 36.804, 36.671, 
+        37.535, 37.460, 36.786, 36.750, 36.780, 
+        36.850, 37.830, 36.790, 36.878, 37.380, 
+        36.879, 37.380, 36.790, 37.265, 36.702, 
+        37.240, 37.346, 37.330
+    ],
+    'Pop_Density': [
+        25000, 12000, 9500, 15000, 450, 
+        5200, 31000, 7800, 11000, 19000, 
+        26000, 6200, 18000, 18000, 4200, 
+        120, 600, 35000, 9500, 29000, 
+        22000, 210, 4500, 85, 60, 
+        8500, 45, 15000, 8500, 4200, 
+        280, 90, 80, 8000, 110, 
+        110, 75, 35000, 24000, 95, 
+        24000, 110, 80, 400, 3500, 
+        70, 400, 120
+    ]
 }
 
-df = pd.DataFrame(data)
+df = pd.DataFrame(area_data)
 
-# Verification: Ensure customer tally matches GT Region goal (~943)
-actual_tally = df['Customer_Count'].sum()
+# --- VERIFICATION STEP ---
+total_customers = df['Count'].sum()
 
-# --- SIDEBAR KEY & INTERFACE ---
-st.sidebar.title("🗺️ Map Controls")
-view_option = st.sidebar.radio("Select Strategy View:", ["Population Density (Heatmap)", "Market Channels (Markers)"])
+# Likelihood estimation based on Area Type
+def estimate_channels(row):
+    if row['Count'] >= 40 or row['Area'] in ['EASTLEIGH', 'NAIROBI CBD']:
+        return "High (Distribution Hub)"
+    elif row['Pop_Density'] > 15000:
+        return "Retail Heavy (Dukas & Small Shops)"
+    else:
+        return "Mixed (Retail & Local Wholesale)"
 
-st.sidebar.markdown("---")
-st.sidebar.metric("Total Customers Tallied", f"{actual_tally}")
-st.sidebar.info("This tally accounts for all 943 customers in the GT region across the 30 primary area hubs.")
+df['Likelihood'] = df.apply(estimate_channels, axis=1)
 
-# Area Filter
-search_area = st.sidebar.selectbox("Go to Specific Area:", ["Overview"] + list(df['Area']))
+# --- SIDEBAR & FILTERING ---
+st.sidebar.title("Strategy & Stats")
+view = st.sidebar.radio("Map View:", ["Customer Density (Heatmap)", "Specific Shop Counts (Markers)"])
 
-# --- MAP RENDERING ---
-# Center on Nairobi
-m = folium.Map(location=[-1.286, 36.817], zoom_start=9, tiles='CartoDB Positron')
+st.sidebar.markdown(f"### Total Customer Tally: **{total_customers}**")
+if total_customers == 942:
+    st.sidebar.success("✅ Perfectly Matches Excel Tally")
+else:
+    st.sidebar.warning(f"Note: Current Tally is {total_customers}.")
 
-if view_option == "Population Density (Heatmap)":
-    # Heatmap based on Population Density rather than customer count to show potential
-    heat_data = [[row['Lat'], row['Lon'], row['Pop_Density_sqkm']] for index, row in df.iterrows()]
-    HeatMap(heat_data, radius=35, blur=20).add_to(m)
+# Area Selection for Auto-Zoom
+selected_area = st.sidebar.selectbox("Jump to Area:", ["All Areas"] + list(df['Area']))
+
+# --- MAP LOGIC ---
+# Centering map on Nairobi
+map_center = [-1.286, 36.817]
+if selected_area != "All Areas":
+    row = df[df['Area'] == selected_area].iloc[0]
+    map_center = [row['Lat'], row['Lon']]
+    zoom = 13
+else:
+    zoom = 9
+
+m = folium.Map(location=map_center, zoom_start=zoom, tiles='CartoDB Positron')
+
+if view == "Customer Density (Heatmap)":
+    heat_data = [[row['Lat'], row['Lon'], row['Count']] for index, row in df.iterrows()]
+    HeatMap(heat_data, radius=25, blur=15).add_to(m)
 else:
     marker_cluster = MarkerCluster().add_to(m)
     for index, row in df.iterrows():
-        # Popup HTML
         html = f"""
-        <div style="font-family: Arial; width: 220px;">
-            <h4 style="color:#2E86C1;">{row['Area']}</h4>
-            <hr>
-            <b>GT Customers:</b> {row['Customer_Count']}<br>
-            <b>Pop Density:</b> {row['Pop_Density_sqkm']:,} /km²<br>
-            <br>
-            <b>Likelihood of Channels:</b><br>
-            - Wholesalers: {row['Wholesalers']}<br>
-            - Supermarkets: High concentration<br>
-            - Dukas/Retail: {row['Likely_Dukas']}
+        <div style="font-family: Arial; width: 200px;">
+            <h4 style="color:navy; margin-bottom:5px;">{row['Area']}</h4>
+            <hr style="margin:5px 0;">
+            <b>Distinct Customers:</b> {row['Count']}<br>
+            <b>Est. Pop Density:</b> {row['Pop_Density']:,} km²<br>
+            <b>Strategy Segment:</b><br>{row['Likelihood']}
         </div>
         """
-        popup = folium.Popup(html, max_width=260)
-        
-        # Color code: Red for Wholesale Hubs, Blue for Retail Clusters
-        icon_color = 'red' if row['Wholesalers'] == 'Dominant' else 'blue'
-        
         folium.Marker(
             location=[row['Lat'], row['Lon']],
-            popup=popup,
-            tooltip=f"{row['Area']} - Click for Market Data",
-            icon=folium.Icon(color=icon_color, icon='shop', prefix='fa')
+            popup=folium.Popup(html, max_width=250),
+            tooltip=f"{row['Area']}: {row['Count']} customers",
+            icon=folium.Icon(color='red' if row['Count'] >= 40 else 'blue', icon='shopping-cart', prefix='fa')
         ).add_to(marker_cluster)
 
-# --- LAYOUT ---
-col1, col2 = st.columns([4, 1])
+# --- DISPLAY ---
+col1, col2 = st.columns([3, 1.2])
 
 with col1:
-    st_folium(m, width=1100, height=700)
+    st_folium(m, width=900, height=650)
 
 with col2:
-    st.subheader("High Potential Areas")
-    st.write("Ranked by Population Density")
+    st.subheader("Data Tally Table")
     st.dataframe(
-        df[['Area', 'Pop_Density_sqkm', 'Customer_Count']].sort_values(by='Pop_Density_sqkm', ascending=False),
-        hide_index=True
+        df[['Area', 'Count', 'Likelihood']].sort_values(by='Count', ascending=False), 
+        hide_index=True,
+        height=600
     )
 
-# --- STRATEGY FOOTER ---
-st.success(f"Logistics Insight: {df.loc[df['Customer_Count'].idxmax(), 'Area']} is your densest delivery zone with {df['Customer_Count'].max()} shops.")
+st.info("Market Intel: Red markers denote High-Priority regions with 40+ distinct customers, typically acting as regional distribution hubs.")
