@@ -2,104 +2,125 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 
-# SET PAGE TO WIDE MODE
-st.set_page_config(layout="wide", page_title="Kenya Retail Expansion")
+# Configure Streamlit page
+st.set_page_config(layout="wide", page_title="Kenya Retail Hub Mapping")
 
-st.title("🇰🇪 Kenya National Retail Expansion Analysis")
-st.markdown("Route-based analysis of **942 Customers** vs National Market Potential.")
+st.title("🗺️ National Expansion: Area Highlight Map")
+st.markdown("Detailed breakdown of **942 Customers** across all regional trade routes.")
 
-# 1. THE COMPLETE DATA & GEO-REFERENCE TABLE
-# We hardcode these to ensure the map never loads as "Blank"
+# 1. THE COMPLETE GEOGRAPHIC & DATASET REFERENCE
 @st.cache_data
-def load_and_map_data():
-    data = {
-        'Area': [
-            'EASTLEIGH', 'NAIROBI CBD', 'THIKA', 'KAMITI RD', 'KITUI', 'MOMBASA RD', 'KAYOLE', 
-            'RUIRU-JUJA', 'NAIROBI WEST', 'KADAMALA', 'UMOJA', 'RONGAI', 'UTAWALA', 'KASA-MWIKI', 
-            'WANGIGE-LIMURU', 'GARISSA', 'MACHAKOS', 'PIPELINE', 'KILIMANI', 'KAWANGWARE', 
-            'GITHURAI 45', 'MWINGI', 'NGONG', 'WOTE', 'KIBWEZI', 'KIAMBU', 'OLOITOKTOK', 
-            'KANGUNDO RD', 'PARKLANDS', 'KIKUYU', 'MATUU', 'EMALI', 'NAMANGA', 'WAIYAKI WAY', 
-            'KAJIADO', 'ISINYA', 'MAKINDU', 'KIBRA', 'JOGOO RD', 'SULTAN HAMUD', 'JOGOO ROAD', 
-            'NUNGUNI', 'BISIL', 'TALA', 'KAREN', 'SALAMA', 'KANGUNDO', 'KOLA'
-        ],
-        'Actual_Customers': [
-            81, 71, 45, 43, 43, 40, 37, 36, 34, 32, 31, 29, 27, 26, 26, 25, 23, 21, 20, 20, 
-            17, 16, 15, 14, 14, 13, 12, 12, 12, 10, 10, 10, 8, 8, 7, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 1, 1
-        ]
-    }
-    df = pd.DataFrame(data)
+def get_final_mapped_data():
+    # Area, Customers
+    base_data = [
+        ['EASTLEIGH', 81], ['NAIROBI CBD', 71], ['THIKA', 45], ['KAMITI RD', 43], 
+        ['KITUI', 43], ['MOMBASA RD', 40], ['KAYOLE', 37], ['RUIRU-JUJA', 36], 
+        ['NAIROBI WEST', 34], ['KADAMALA', 32], ['UMOJA', 31], ['RONGAI', 29], 
+        ['UTAWALA', 27], ['KASA-MWIKI', 26], ['WANGIGE-LIMURU', 26], ['GARISSA', 25], 
+        ['MACHAKOS', 23], ['PIPELINE', 21], ['KILIMANI', 20], ['KAWANGWARE', 20], 
+        ['GITHURAI 45', 17], ['MWINGI', 16], ['NGONG', 15], ['WOTE', 14], 
+        ['KIBWEZI', 14], ['KIAMBU', 13], ['OLOITOKTOK', 12], ['KANGUNDO RD', 12], 
+        ['PARKLANDS', 12], ['KIKUYU', 10], ['MATUU', 10], ['EMALI', 10], 
+        ['NAMANGA', 8], ['WAIYAKI WAY', 8], ['KAJIADO', 7], ['ISINYA', 7], 
+        ['MAKINDU', 7], ['KIBRA', 6], ['JOGOO RD', 6], ['SULTAN HAMUD', 5], 
+        ['JOGOO ROAD', 5], ['NUNGUNI', 4], ['BISIL', 4], ['TALA', 3], 
+        ['KAREN', 3], ['SALAMA', 2], ['KANGUNDO', 1], ['KOLA', 1]
+    ]
+    df = pd.DataFrame(base_data, columns=['Area', 'Actual_Customers'])
 
-    # MAP COORDINATES, COUNTIES, AND ROUTES
-    geo_ref = {
-        # Format: Area: [Lat, Lon, County, Sub-County, Route, Potential_Total]
-        'NAIROBI CBD': [-1.2833, 36.8233, 'Nairobi', 'Starehe', 'Hub', 1400],
-        'EASTLEIGH': [-1.2741, 36.8485, 'Nairobi', 'Kamkunji', 'Thika Rd Route', 900],
-        'THIKA': [-1.0333, 37.0692, 'Kiambu', 'Thika West', 'Thika Rd Route', 400],
-        'MOMBASA RD': [-1.3340, 36.8625, 'Nairobi', 'Embakasi South', 'Mombasa Rd Route', 450],
-        'KAYOLE': [-1.2673, 36.9314, 'Nairobi', 'Embakasi Central', 'Garissa Hwy', 350],
-        'KITUI': [-1.3683, 37.9944, 'Kitui', 'Kitui Central', 'Garissa Hwy', 200],
-        'MACHAKOS': [-1.5177, 37.2634, 'Machakos', 'Machakos Town', 'Garissa Hwy', 300],
-        'GARISSA': [-0.4532, 39.6461, 'Garissa', 'Garissa Township', 'Garissa Hwy', 150],
-        'RONGAI': [-1.3931, 36.7420, 'Kajiado', 'Kajiado North', 'South Route', 250],
-        'PIPELINE': [-1.3144, 36.8981, 'Nairobi', 'Embakasi South', 'Mombasa Rd Route', 600],
-        'KILIMANI': [-1.2913, 36.7880, 'Nairobi', 'Dagoretti North', 'Hub', 200],
-        'KAREN': [-1.3200, 36.7020, 'Nairobi', 'Langata', 'South Route', 100],
-        'WOTE': [-1.7808, 37.6258, 'Makueni', 'Makueni', 'Mombasa Rd Route', 120],
+    # COORDINATE AND ROUTE TABLE (Highlights)
+    geo_map = {
+        # Area: [lat, lon, Route_Color, Route_Name, County, Sub_County]
+        'EASTLEIGH': [-1.2741, 36.8485, [255, 0, 0], 'Thika Rd Corridor', 'Nairobi', 'Kamkunji'],
+        'NAIROBI CBD': [-1.2833, 36.8233, [255, 0, 0], 'Internal Hub', 'Nairobi', 'Starehe'],
+        'THIKA': [-1.0333, 37.0692, [0, 100, 255], 'Thika Rd Corridor', 'Kiambu', 'Thika West'],
+        'KAMITI RD': [-1.2050, 36.8900, [0, 100, 255], 'Thika Rd Corridor', 'Nairobi', 'Roysambu'],
+        'KITUI': [-1.3683, 37.9944, [0, 200, 100], 'Eastern Corridor', 'Kitui', 'Kitui Central'],
+        'MOMBASA RD': [-1.3340, 36.8625, [255, 165, 0], 'Mombasa Rd Route', 'Nairobi', 'Embakasi South'],
+        'KAYOLE': [-1.2673, 36.9314, [0, 200, 100], 'Eastern Corridor', 'Nairobi', 'Embakasi Central'],
+        'MACHAKOS': [-1.5177, 37.2634, [0, 200, 100], 'Eastern Corridor', 'Machakos', 'Machakos Town'],
+        'GARISSA': [-0.4532, 39.6461, [0, 200, 100], 'Eastern Corridor', 'Garissa', 'Garissa Township'],
+        'RONGAI': [-1.3931, 36.7420, [128, 0, 128], 'South Route', 'Kajiado', 'Kajiado North'],
+        'WOTE': [-1.7808, 37.6258, [255, 165, 0], 'Mombasa Rd Route', 'Makueni', 'Makueni'],
+        'PIPELINE': [-1.3144, 36.8981, [255, 165, 0], 'Mombasa Rd Route', 'Nairobi', 'Embakasi South'],
+        'KIBWEZI': [-2.4167, 37.9667, [255, 165, 0], 'Mombasa Rd Route', 'Makueni', 'Kibwezi East'],
     }
 
-    # Apply geographic info
-    def apply_geo(area):
-        info = geo_ref.get(area, [-1.28, 36.82, 'Regional', 'Other', 'Other', 100])
+    def apply_ref(row):
+        # Default for any areas not specifically mapped (General Nairobi coordinates)
+        info = geo_map.get(row['Area'], [-1.285, 36.821, [150, 150, 150], 'Nairobi Central', 'Nairobi', 'Internal'])
         return pd.Series(info)
 
-    df[['lat', 'lon', 'County', 'Sub_County', 'Route', 'Potential_Shops']] = df['Area'].apply(apply_geo)
+    df[['lat', 'lon', 'route_color', 'route_name', 'county', 'sub_county']] = df['Area'].apply(apply_ref)
     
-    # Calculate expansion rate columns
-    df['Potential_General'] = (df['Potential_Shops'] * 0.5).astype(int)
-    df['Potential_Beauty'] = (df['Potential_Shops'] * 0.3).astype(int)
-    df['Potential_MiniMart'] = (df['Potential_Shops'] * 0.2).astype(int)
-    df['Market_Gap'] = df['Potential_Shops'] - df['Actual_Customers']
+    # Calculate Channels & Potential (Simulation for highlighting growth)
+    df['Potential_General'] = (df['Actual_Customers'] * 5).astype(int)
+    df['Potential_Beauty'] = (df['Actual_Customers'] * 3).astype(int)
+    df['Potential_MiniMart'] = (df['Actual_Customers'] * 2).astype(int)
+    df['Growth_Headroom'] = df['Potential_General'] + df['Potential_Beauty']
     
     return df
 
-df = load_and_map_data()
+df = get_final_mapped_data()
 
-# 2. KEY METRICS DISPLAY
-m1, m2, m3 = st.columns(3)
-m1.metric("National Customers", f"{df['Actual_Customers'].sum():,}")
-m2.metric("Total Market Gap", f"{df['Market_Gap'].sum():,}")
-m3.metric("Growth Headroom", "High")
+# 2. KEY PERFORMANCE INDICATORS
+c1, c2, c3 = st.columns(3)
+c1.metric("National Customers", df['Actual_Customers'].sum())
+c2.metric("Market Areas Mapped", len(df))
+c3.metric("Largest Hub", "Eastleigh / CBD")
 
-# 3. INTERACTIVE 3D MAP
-st.subheader("Spatial Route Mapping (Red Towers = Existing Customers)")
-# If the map is black, this logic ensures 'lat' and 'lon' are exactly what PyDeck needs.
-view_state = pdk.ViewState(latitude=-1.30, longitude=37.20, zoom=7.5, pitch=45)
+# 3. 3D MAP VISUALIZATION WITH HIGHLIGHTS
+st.subheader("Highlighted Customer Reach & Potential")
 
-layer = pdk.Layer(
+view_state = pdk.ViewState(latitude=-1.3, longitude=37.2, zoom=7, pitch=45)
+
+# Layer 1: The Highlight Halo (Glow ring around every area showing potential)
+potential_layer = pdk.Layer(
+    'ScatterplotLayer',
+    data=df,
+    get_position='[lon, lat]',
+    get_color='route_color',
+    opacity=0.3,
+    get_radius='Growth_Headroom * 30',
+    pickable=True,
+)
+
+# Layer 2: The Core Hub Tower (The Height of existing business)
+actual_layer = pdk.Layer(
     'ColumnLayer',
     data=df,
     get_position='[lon, lat]',
     get_elevation='Actual_Customers',
-    elevation_scale=500,
-    radius=3000,
-    get_fill_color=[231, 76, 60, 200], # Red pillars
+    elevation_scale=1000,
+    radius=3500,
+    get_fill_color='route_color',
     pickable=True,
     auto_highlight=True,
 )
 
 # Render Map
 st.pydeck_chart(pdk.Deck(
-    map_style='mapbox://styles/mapbox/dark-v9',
+    map_style='mapbox://styles/mapbox/light-v9',
     initial_view_state=view_state,
-    layers=[layer],
-    tooltip={"text": "Area: {Area}\nRoute: {Route}\nActual Customers: {Actual_Customers}\nExpansion Gap: {Market_Gap}"}
+    layers=[potential_layer, actual_layer],
+    tooltip={
+        "html": "<b>Area:</b> {Area}<br/><b>County:</b> {county}<br/><b>Customers:</b> {Actual_Customers}<br/><b>Headroom:</b> {Growth_Headroom}",
+        "style": {"color": "white"}
+    }
 ))
 
-# 4. NATIONAL EXPANSION DATA TABLE (BY CHANNEL)
-st.subheader("Route-Based Expansion Details")
-channel_breakdown = df[['Route', 'Area', 'County', 'Actual_Customers', 'Potential_General', 'Potential_Beauty', 'Potential_MiniMart', 'Market_Gap']]
-st.dataframe(channel_breakdown.sort_values(by='Market_Gap', ascending=False), use_container_width=True)
+# 4. REGIONAL DATA BREAKDOWN
+st.subheader("Route & Channel Inventory")
+tabs = st.tabs(["Strategic Table", "Channel Forecast", "Export for Google Maps"])
 
-# 5. EXPORT FOR GOOGLE MY MAPS
-csv = df.to_csv(index=False).encode('utf-8')
-st.download_button(label="📥 Download Data for Google My Maps", data=csv, file_name="national_route_expansion.csv", mime="text/csv")
+with tabs[0]:
+    st.dataframe(df[['Area', 'county', 'sub_county', 'route_name', 'Actual_Customers']].sort_values('Actual_Customers', ascending=False), use_container_width=True)
+
+with tabs[1]:
+    st.write("National Retail Breakdown (Potential Outlets):")
+    st.dataframe(df[['Area', 'Potential_General', 'Potential_Beauty', 'Potential_MiniMart']], use_container_width=True)
+
+with tabs[2]:
+    st.info("Download this file and upload it to Google My Maps for field sales tracking.")
+    csv_file = df.to_csv(index=False).encode('utf-8')
+    st.download_button(label="📥 Download National Highlight Data", data=csv_file, file_name="kenya_highlight_analysis.csv", mime="text/csv")
